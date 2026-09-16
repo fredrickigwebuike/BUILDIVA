@@ -1,0 +1,358 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function isSupplier() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "supplier";
+    }
+
+    // User profiles: users can create/update their own profile.
+    // Administrative changes are reserved for server/admin workflows.
+    match /users/{uid} {
+      allow create: if isOwner(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.role == "customer";
+
+      allow read: if isOwner(uid) || isAdmin();
+
+      allow update: if isOwner(uid)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "displayName", "phone", "company", "city", "state", "country",
+          "profileCompleted", "updatedAt"
+        ]);
+
+      allow delete: if isAdmin();
+    }
+
+    // Delivery addresses are private to the owning customer.
+    match /users/{uid}/addresses/{addressId} {
+      allow read, create: if isOwner(uid);
+      allow update: if isOwner(uid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+        "label", "address", "city", "state", "phone", "updatedAt"
+      ]);
+      allow delete: if isOwner(uid);
+    }
+
+    // Public catalogue: only published products are readable.
+    match /products/{productId} {
+      allow read: if resource.data.status == "published" || isAdmin();
+
+      // Product creation/update will ultimately be mediated by supplier/admin
+      // workflows. Supplier ownership must match supplierId.
+      allow create: if isSupplier()
+        && request.resource.data.supplierId == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (isSupplier()
+          && resource.data.supplierId == request.auth.uid
+          && request.resource.data.supplierId == resource.data.supplierId);
+
+      allow delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Supplier profiles are public only when approved.
+    match /suppliers/{supplierId} {
+      allow read: if resource.data.verificationStatus == "approved" || isAdmin() || isOwner(supplierId);
+      allow create: if isOwner(supplierId);
+      allow update: if isAdmin() || (isOwner(supplierId) && request.resource.data.verificationStatus == resource.data.verificationStatus && request.resource.data.applicationStatus == resource.data.applicationStatus);
+      allow delete: if isAdmin() || isOwner(supplierId);
+    }
+
+    // Private transactional records.
+    match /orders/{orderId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid)
+        || (signedIn() && resource.data.supplierId == request.auth.uid);
+
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.status == "awaiting_confirmation"
+        && request.resource.data.paymentStatus == "unpaid";
+
+      // Order state, totals, payment status and invoice references are trusted-server fields.
+      // Customers may not rewrite transactional records from the browser.
+      allow update: if isAdmin();
+
+      allow delete: if isAdmin();
+    }
+
+    match /rfqs/{rfqId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.createdBy == request.auth.uid)
+        || (isSupplier() && request.auth.uid in resource.data.matchedSupplierIds && resource.data.status in ["open", "quoting"]);
+
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid;
+
+      allow update: if isAdmin()
+        || (signedIn() && resource.data.createdBy == request.auth.uid && request.resource.data.createdBy == resource.data.createdBy);
+
+      allow delete: if isAdmin();
+    }
+
+    match /quotations/{quotationId} {
+      allow read: if isAdmin()
+        || (signedIn() && (
+          resource.data.supplierId == request.auth.uid ||
+          resource.data.customerId == request.auth.uid
+        ));
+
+      allow create: if isSupplier()
+        && request.resource.data.supplierId == request.auth.uid
+        && request.resource.data.status == "submitted"
+        && exists(/databases/$(database)/documents/rfqs/$(request.resource.data.rfqId))
+        && request.auth.uid in get(/databases/$(database)/documents/rfqs/$(request.resource.data.rfqId)).data.matchedSupplierIds;
+
+      allow update: if isAdmin()
+        || (isSupplier() && resource.data.supplierId == request.auth.uid)
+        || (signedIn() && resource.data.customerId == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "updatedAt"])
+          && resource.data.status == "submitted"
+          && request.resource.data.status == "selected");
+
+      allow delete: if isAdmin();
+    }
+
+    match /invoices/{invoiceId} {
+      allow read: if isAdmin()
+        || (signedIn() && (
+          resource.data.customerId == request.auth.uid ||
+          resource.data.supplierId == request.auth.uid
+        ));
+      allow write: if isAdmin();
+    }
+
+    match /deliveries/{deliveryId} {
+      allow read: if isAdmin()
+        || (signedIn() && (
+          resource.data.customerId == request.auth.uid ||
+          resource.data.supplierId == request.auth.uid
+        ));
+      allow write: if isAdmin();
+    }
+
+    match /payments/{paymentId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.customerId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["read","readAt"]);
+      allow create, delete: if isAdmin();
+    }
+
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Government procurement opportunities are admin-published records.
+    match /governmentTenders/{tenderId} {
+      allow read: if isAdmin() || (resource.data.status in ["published", "closing_soon", "closed", "awarded"]);
+      allow write: if isAdmin();
+    }
+
+    // Bid records are created and transitioned only by trusted Functions.
+    match /governmentBids/{bidId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.bidderId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Procurement readiness/compliance profile.
+    match /procurementProfiles/{uid} {
+      allow read: if isAdmin() || isOwner(uid);
+      allow write: if false;
+    }
+
+    // Stage 12 — verification, evaluation and intelligence records.
+    match /procurementDocumentVersions/{versionId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.ownerId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /bidEvaluations/{evaluationId} {
+      allow read: if isAdmin() || (signedIn() && resource.data.bidderId == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /tenderIntelligence/{tenderId} {
+      allow read: if isAdmin() || (signedIn() && get(/databases/$(database)/documents/governmentTenders/$(tenderId)).data.status in ["published", "closing_soon", "closed", "awarded"]);
+      allow write: if false;
+    }
+
+    // Stage 16 — pricing intelligence is trusted-server/admin generated.
+    match /pricingIntelligence/{quotationId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /priceObservations/{observationId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Stage 15 — supplier intelligence is trusted-server/admin generated.
+    match /supplierIntelligence/{supplierId} {
+      allow read: if isAdmin() || (signedIn() && supplierId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Stage 13 — financial records are trusted-server/admin controlled.
+    match /expenses/{expenseId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /supplierCosts/{costId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // Stage 17 — CRM records are trusted-server/admin controlled.
+    match /crmLeads/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /crmOrganizations/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /crmContacts/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /crmOpportunities/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /crmActivities/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 18 — marketing and customer engagement records are trusted-server/admin controlled.
+    match /marketingCampaigns/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /marketingSegments/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /communicationTemplates/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /campaignEngagements/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /marketingFollowUps/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 19 — customer support and service management. All mutations go through trusted Functions.
+    match /supportTickets/{id} {
+      allow read: if isAdmin() || (signedIn() && resource.data.requesterId == request.auth.uid);
+      allow write: if false;
+    }
+    match /supportMessages/{id} {
+      allow read: if isAdmin()
+        || (signedIn() && exists(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId))
+          && get(/databases/$(database)/documents/supportTickets/$(resource.data.ticketId)).data.requesterId == request.auth.uid
+          && resource.data.internal == false);
+      allow write: if false;
+    }
+
+    // Stage 20 — inventory and warehouse records. Mutations are trusted-server/admin only.
+    match /warehouses/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /inventoryItems/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /inventoryTransactions/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /stockReservations/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 21 — purchasing and supplier procurement records. Mutations are trusted-server/admin only.
+    match /purchaseRequests/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /purchaseOrders/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /goodsReceipts/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /supplierInvoices/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 22 — supplier PO collaboration records are trusted-server only.
+    match /purchaseOrderAcknowledgements/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /purchaseOrderDeliveryConfirmations/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /purchaseOrderExceptions/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /purchaseOrderCollaborationMessages/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 23 — logistics network records are trusted-server/admin controlled.
+    match /logisticsPartners/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /logisticsVehicles/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /dispatchJobs/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /deliveryTrackingEvents/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /transportRates/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 24 — route optimization records are trusted-server/admin controlled.
+    match /routePlans/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /routeStops/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /routeOptimizationRuns/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 26 — receivables, payables and settlement records are trusted-server controlled.
+    match /accountsReceivable/{id} { allow read: if isAdmin() || (signedIn() && resource.data.customerId == request.auth.uid); allow write: if false; }
+    match /accountsPayable/{id} { allow read: if isAdmin() || (signedIn() && resource.data.supplierId == request.auth.uid); allow write: if false; }
+    match /paymentSchedules/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /financialReceipts/{id} { allow read: if isAdmin() || (signedIn() && (resource.data.customerId == request.auth.uid || resource.data.supplierId == request.auth.uid)); allow write: if false; }
+    match /creditNotes/{id} { allow read: if isAdmin() || (signedIn() && resource.data.customerId == request.auth.uid); allow write: if false; }
+
+    // Stage 25 — generated business documents are private to the owner/related party or administrators.
+    match /businessDocuments/{id} {
+      allow read: if isSignedIn() && (isAdmin() || resource.data.createdBy == request.auth.uid || resource.data.customerId == request.auth.uid || resource.data.supplierId == request.auth.uid || resource.data.bidderId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Stage 28 — bank and cash records are trusted-server/admin controlled.
+    match /bankAccounts/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /bankTransactions/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /bankReconciliations/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 27 — double-entry ledger records are trusted-server/admin controlled.
+    match /ledgerAccounts/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /journalEntries/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 30 — tax and compliance records are trusted-server/admin controlled.
+    match /taxProfiles/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /taxTransactions/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /taxPeriods/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /taxCalendar/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 33 — workflow automation records.
+    match /workflowRules/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /workflowEscalations/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 32 — enterprise approval workflows.
+    match /approvalRequests/{id} { allow read: if isAdmin() || (signedIn() && resource.data.requestedBy == request.auth.uid); allow write: if false; }
+    match /approvalActions/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 31 — enterprise identity and access records.
+    match /accessRoles/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /accessProfiles/{id} { allow read: if isAdmin() || (signedIn() && id == request.auth.uid); allow write: if false; }
+    match /accessInvitations/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /approvalLimits/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 36 — public API and developer portal records.
+    match /apiClients/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /apiKeys/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /apiWebhookSubscriptions/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /apiUsage/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /apiRateLimits/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 35 — enterprise API & integration gateway.
+    match /integrations/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /integrationJobs/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /integrationRequestLogs/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /webhookEvents/{id} { allow read: if isAdmin(); allow write: if false; }
+
+    // Stage 34 — enterprise communications infrastructure.
+    match /notificationPreferences/{id} { allow read: if isSignedIn() && id == request.auth.uid; allow write: if false; }
+    match /communicationTemplates/{id} { allow read: if isAdmin(); allow write: if false; }
+    match /communicationQueue/{id} { allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid); allow write: if false; }
+    match /communicationDeliveryLogs/{id} { allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid); allow write: if false; }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+

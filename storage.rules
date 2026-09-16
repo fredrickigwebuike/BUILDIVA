@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function isAdmin() { return signedIn() && request.auth.token.admin == true; }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+    match /suppliers/{supplierId}/verification/{allPaths=**} {
+      allow read, write: if isOwner(supplierId) || isAdmin();
+    }
+    match /suppliers/{supplierId}/products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(supplierId) || isAdmin();
+    }
+    match /procurement/{userId}/{allPaths=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+    match /deliveries/{deliveryId}/proof/{allPaths=**} {
+      allow read: if signedIn() && (
+        isAdmin() ||
+        get(/databases/(default)/documents/deliveries/$(deliveryId)).data.customerId == request.auth.uid ||
+        get(/databases/(default)/documents/deliveries/$(deliveryId)).data.supplierId == request.auth.uid
+      );
+      allow write: if signedIn() && (
+        isAdmin() ||
+        get(/databases/(default)/documents/deliveries/$(deliveryId)).data.supplierId == request.auth.uid
+      );
+    }
+    // Procurement compliance documents are private to their owner and BUILDIVA administrators.
+    match /procurement/{userId}/documents/{allPaths=**} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+    // Government bid documents are private to the bidder and BUILDIVA administrators.
+    match /government-bids/{bidderId}/{allPaths=**} {
+      allow read, write: if isOwner(bidderId) || isAdmin();
+    }
+    match /{allPaths=**} { allow read, write: if false; }
+  }
+}

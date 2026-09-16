@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BUILDIVA Nigeria Ltd — digital marketplace, procurement and supply solutions." />
+  <meta name="theme-color" content="#006a51" />
+  <title>BUILDIVA — Build • Source • Supply • Grow</title>
+  <link rel="icon" href="/assets/favicon.png" />
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="BUILDIVA home"><img src="/assets/buildiva-logo.png" alt="BUILDIVA Nigeria Ltd" /></a>
+    <nav class="nav" aria-label="Main navigation">
+      <a href="#marketplace">Marketplace</a><a href="#procurement">Procurement</a><a href="#suppliers">Suppliers</a><a href="#government">Government</a><a href="#about">About</a><a href="/api/">API Developers</a>
+    </nav>
+    <div class="header-actions" id="headerAuthActions">
+      <button class="icon-btn" id="searchBtn" aria-label="Search">⌕</button>
+      <button class="btn btn-ghost" data-auth="login">Log in</button>
+      <button class="btn btn-primary" data-auth="signup">Sign up</button>
+    </div>
+    <button class="menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+  </header>
+
+  <main>
+    <section class="hero hero-premium" id="home">
+      <div class="hero-content">
+        <div class="hero-kicker"><span class="pulse-dot"></span> NIGERIA'S DIGITAL SUPPLY & PROCUREMENT PLATFORM</div>
+        <h1>Source smarter.<br><span>Build with confidence.</span></h1>
+        <p class="hero-copy">Buy materials, discover suppliers, request competitive quotations and manage procurement from one trusted digital workspace.</p>
+        <div class="hero-actions"><button class="btn btn-primary btn-large" data-auth="signup">Start sourcing</button><a class="btn btn-outline-light btn-large" href="#marketplace">Explore marketplace</a></div>
+        <div class="hero-search-label">What do you need today?</div>
+        <div class="search-box search-box-premium"><span>⌕</span><input id="heroSearch" type="search" placeholder="Search cement, iron rods, roofing, suppliers..." /><button class="btn btn-primary" id="heroSearchBtn">Search</button></div>
+        <div class="hero-trust"><span>✓ Verified supplier workflows</span><span>✓ Structured quotations</span><span>✓ Delivery tracking</span></div>
+      </div>
+      <div class="hero-art premium-art" aria-hidden="true">
+        <div class="art-glow glow-one"></div><div class="art-glow glow-two"></div>
+        <div class="cityline"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="hero-dashboard-card">
+          <div class="mini-top"><span class="mini-brand">BUILDIVA</span><span class="mini-live"><b></b> LIVE</span></div>
+          <div class="mini-title">Procurement overview</div>
+          <div class="mini-metrics"><div><small>Open RFQs</small><strong>24</strong></div><div><small>Suppliers</small><strong>128</strong></div><div><small>Deliveries</small><strong>16</strong></div></div>
+          <div class="mini-progress"><span style="width:72%"></span></div><small class="mini-note">Illustrative interface preview</small>
+        </div>
+        <div class="floating-card floating-card-one"><span class="float-icon">↗</span><div><strong>Smart sourcing</strong><small>Compare supplier quotes</small></div></div>
+        <div class="floating-card floating-card-two"><span class="float-icon orange">◆</span><div><strong>Delivery ready</strong><small>Track from supplier to site</small></div></div>
+        <div class="art-ground"></div>
+      </div>
+    </section>
+
+    <section class="value-strip" aria-label="BUILDIVA services">
+      <a href="#marketplace"><span class="value-icon">01</span><div><strong>Marketplace</strong><small>Products & supplies</small></div></a>
+      <a href="#rfq-center"><span class="value-icon">02</span><div><strong>Procurement</strong><small>RFQs & quotations</small></div></a>
+      <a href="#suppliers"><span class="value-icon">03</span><div><strong>Suppliers</strong><small>Source with structure</small></div></a>
+      <a href="#government"><span class="value-icon">04</span><div><strong>Institutional</strong><small>Serious supply</small></div></a>
+      <a href="#products"><span class="value-icon">05</span><div><strong>Logistics</strong><small>Delivery coordination</small></div></a>
+    </section>
+
+    <section class="section category-section" id="marketplace">
+      <div class="section-head premium-head"><div><p class="eyebrow">MARKETPLACE</p><h2>Everything your project needs.</h2><p>Start with a category or search the catalogue. Pricing and availability are shown from the current catalogue data when available.</p></div><a href="#products" class="text-link">Browse marketplace →</a></div>
+      <div class="categories categories-premium">
+        <button data-category="Cement"><span class="category-art cement-art">▤</span><strong>Cement</strong><small>Construction essential</small></button>
+        <button data-category="Iron Rods"><span class="category-art steel-art">▥</span><strong>Iron rods</strong><small>Reinforcement</small></button>
+        <button data-category="Blocks"><span class="category-art block-art">▦</span><strong>Blocks</strong><small>Building materials</small></button>
+        <button data-category="Roofing"><span class="category-art roof-art">⌂</span><strong>Roofing</strong><small>Roof & finishing</small></button>
+        <button data-category="Plumbing"><span class="category-art pipe-art">◉</span><strong>Plumbing</strong><small>Pipes & fittings</small></button>
+        <button data-category="Electrical"><span class="category-art electric-art">ϟ</span><strong>Electrical</strong><small>Cables & systems</small></button>
+        <button data-category="Other Materials"><span class="category-art other-art">＋</span><strong>More supplies</strong><small>Explore categories</small></button>
+      </div>
+    </section>
+
+    <section class="section marketplace-premium soft" id="products">
+      <div class="section-head premium-head"><div><p class="eyebrow">LIVE CATALOGUE</p><h2>Shop from the BUILDIVA marketplace.</h2><p>Find a product, review supplier information and move directly into a quotation request.</p></div><div class="marketplace-status premium-status"><span id="marketplaceCount">0 products</span><span id="marketplaceSource">Catalogue preview</span></div></div>
+      <div class="marketplace-filters premium-filters" id="marketplaceFilters"><label><span>Search</span><input id="marketplaceSearch" type="search" placeholder="Product, category or supplier..."></label><label><span>Category</span><select id="marketplaceCategory"><option value="">All categories</option><option>Cement</option><option>Blocks</option><option>Iron Rods</option><option>Roofing</option><option>Plumbing</option><option>Electrical</option><option>Other Materials</option></select></label><label><span>Availability</span><select id="marketplaceStock"><option value="">Any availability</option><option value="available">Available</option><option value="limited">Limited stock</option><option value="out_of_stock">Out of stock</option></select></label><button class="btn btn-ghost" id="clearMarketplaceFilters">Clear</button></div>
+      <div class="product-grid product-grid-premium" id="productGrid"></div>
+    </section>
+
+    <section class="procurement-showcase" id="procurement">
+      <div class="procurement-copy"><p class="eyebrow">SMART PROCUREMENT</p><h2>From “I need this” to “It’s delivered.”</h2><p>BUILDIVA turns a purchasing request into a structured workflow—supplier matching, quotations, approval, ordering, invoicing and delivery records.</p><div class="procurement-actions"><button class="btn btn-primary btn-large" data-auth="signup">Start a procurement request</button><a class="text-link" href="#rfq-center">See how RFQs work →</a></div></div>
+      <div class="workflow-premium"><div class="workflow-line"></div><article><b>01</b><span>Request</span><small>Describe quantities, location and deadline.</small></article><article><b>02</b><span>Source</span><small>Match relevant supplier opportunities.</small></article><article><b>03</b><span>Compare</span><small>Review quotations and delivery terms.</small></article><article><b>04</b><span>Supply</span><small>Order, fulfil and track delivery.</small></article></div>
+    </section>
+
+    <section class="section soft rfq-premium" id="rfq-center"><div class="section-head premium-head"><div><p class="eyebrow">RFQ & QUOTATIONS</p><h2>One place to manage serious purchasing.</h2><p>Create a request, compare responses and keep every procurement step organised.</p></div><button class="btn btn-primary" id="openRFQBtn">Create RFQ</button></div><div class="rfq-dashboard" id="rfqDashboard"><div class="empty-state"><strong>Sign in to manage procurement requests.</strong><span>Your RFQs and supplier quotations will appear here.</span></div></div></section>
+
+    <section class="section supplier-showcase" id="suppliers"><div class="section-head premium-head"><div><p class="eyebrow">FOR SUPPLIERS</p><h2>Turn your supply business into a digital operation.</h2><p>Manage your profile, catalogue, RFQs, purchase orders, fulfilment and performance in one place.</p></div><button class="btn btn-primary" data-auth="signup">Join BUILDIVA</button></div><div class="feature-cards feature-cards-premium"><article><span class="feature-number">01</span><h3>Professional profile</h3><p>Business identity, categories, locations and verification evidence.</p></article><article><span class="feature-number">02</span><h3>Digital catalogue</h3><p>Manage products, prices, stock and delivery coverage.</p></article><article><span class="feature-number">03</span><h3>Procurement opportunities</h3><p>Respond to relevant RFQs and collaborate on purchase orders.</p></article></div></section>
+
+    <section class="government government-premium" id="government"><div><p class="eyebrow">BUSINESS • INSTITUTIONAL • GOVERNMENT</p><h2>Built for supply at every serious level.</h2><p>Structured procurement workflows, compliance records, documentation, supplier management and transparent operational trails.</p><div class="gov-pills"><span>Procurement-ready</span><span>Document control</span><span>Audit trail</span></div><button class="btn btn-light btn-large" data-auth="signup">Create a BUILDIVA account</button></div><div class="gov-visual"><div class="gov-ring"></div><div class="gov-mark">B</div><span>BUILD<br>SUPPLY<br>GROW</span></div></section>
+
+    <section class="section soft" id="government-procurement"><div class="section-head premium-head"><div><p class="eyebrow">GOVERNMENT PROCUREMENT</p><h2>Opportunities and compliance, organised.</h2><p>BUILDIVA can record verified tender notices, deadlines, requirements and bid activity. Official solicitations remain the source of truth.</p></div><button class="btn btn-primary" data-auth="signup">Open procurement workspace</button></div><div class="government-readiness readiness-premium"><div><b>01</b><strong>Tender discovery</strong><span>Verified opportunities entered by authorised users.</span></div><div><b>02</b><strong>Bid workspace</strong><span>Draft, submit and track bid status.</span></div><div><b>03</b><strong>Compliance readiness</strong><span>Keep actual company evidence organised.</span></div><div><b>04</b><strong>Audit trail</strong><span>Record important procurement actions.</span></div></div></section>
+
+    <section class="stats stats-premium"><div><strong>01</strong><span>Integrated platform</span></div><div><strong>360°</strong><span>Procurement workflow</span></div><div><strong>24/7</strong><span>Digital access</span></div><div><strong>NG</strong><span>Nigeria focused</span></div></section>
+
+    <section class="section about about-premium" id="about"><div class="about-badge">B</div><div><p class="eyebrow">ABOUT BUILDIVA</p><h2>Build • Source • Supply • Grow</h2><p>BUILDIVA NIGERIA LTD is a technology-driven marketplace and procurement company connecting customers and organisations with suppliers of goods and services.</p><div class="about-tags"><span>Marketplace</span><span>Procurement</span><span>Supply</span><span>Logistics</span><span>Technology</span></div></div></section>
+    <section class="cta cta-premium"><div><p class="eyebrow">GET STARTED</p><h2>Your next project starts here.</h2><p>Create your BUILDIVA account and bring purchasing, suppliers and delivery into one organised workflow.</p></div><button class="btn btn-light btn-large" data-auth="signup">Create account</button></section>
+  </main>
+  <footer class="footer"><div class="footer-brand"><img src="/assets/buildiva-logo.png" alt="BUILDIVA" /><p>Build • Source • Supply • Grow</p></div><div><h4>Platform</h4><a href="#marketplace">Marketplace</a><a href="#procurement">Procurement</a><a href="#suppliers">Suppliers</a></div><div><h4>Company</h4><a href="#government">Government</a><a href="#about">About</a><a href="/api/">API Developers</a></div><div><h4>Account</h4><button class="footer-button" data-auth="login">Log in</button><button class="footer-button" data-auth="signup">Sign up</button></div><div class="copyright">© 2026 BUILDIVA NIGERIA LTD. All rights reserved.</div></footer>
+
+  <div class="modal-backdrop" id="authModal" hidden><div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle"><button class="modal-close" id="closeAuth" aria-label="Close">×</button><div class="auth-tabs"><button data-auth-tab="login">Log in</button><button data-auth-tab="signup">Create account</button><button data-auth-tab="reset">Reset password</button></div><div id="authPanel"></div></div></div>
+  <div class="modal-backdrop" id="accountModal" hidden><div class="account-modal" role="dialog" aria-modal="true" aria-labelledby="accountTitle"><button class="modal-close" id="closeAccount" aria-label="Close">×</button><div id="accountPanel"></div></div></div>
+  <div class="modal-backdrop" id="rfqModal" hidden><div class="account-modal rfq-modal" role="dialog" aria-modal="true" aria-labelledby="rfqTitle"><button class="modal-close" id="closeRFQ" aria-label="Close">×</button><div id="rfqPanel"></div></div></div>
+  <div class="toast" id="toast" role="status"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
